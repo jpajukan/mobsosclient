@@ -4,9 +4,11 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -26,7 +28,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ListView mDrawerList;
     private ArrayAdapter<String> mAdapter;
 
+    private FragmentManager fManager = getSupportFragmentManager();
 
+    @Override
+    public FragmentManager getSupportFragmentManager() {
+        return super.getSupportFragmentManager();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,5 +112,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return info;
             }
         });
+
+
+        Button button = (Button) findViewById(R.id.postMessageDialogButton);
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                // Perform action on click
+                PostMessageDialogFragment pmDialog = new PostMessageDialogFragment();
+                pmDialog.show(fManager, "whaat");
+            }
+        });
+
     }
 }
