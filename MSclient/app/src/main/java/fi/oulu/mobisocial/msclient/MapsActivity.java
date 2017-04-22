@@ -1,14 +1,19 @@
 package fi.oulu.mobisocial.msclient;
 
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.NotificationCompat;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -122,6 +127,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 pmDialog.show(fManager, "whaat");
             }
         });
+
+        Button button2 = (Button) findViewById(R.id.testButton);
+        button2.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                // Perform action on click
+                Intent intent = new Intent(getApplicationContext(), ArchiveActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+        Button button3 = (Button) findViewById(R.id.testButton2);
+        button3.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                // Perform action on click
+                NotificationCompat.Builder mBuilder =
+                        new NotificationCompat.Builder(getApplicationContext())
+                                .setSmallIcon(R.drawable.common_full_open_on_phone)
+                                .setContentTitle("My notification")
+                                .setContentText("Hello World!");
+
+                // Gets an instance of the NotificationManager service//
+
+                NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+//When you issue multiple notifications about the same type of event, it’s best practice for your app to try to update an existing notification with this new information, rather than immediately creating a new notification. If you want to update this notification at a later date, you need to assign it an ID. You can then use this ID whenever you issue a subsequent notification. If the previous notification is still visible, the system will update this existing notification, rather than create a new one. In this example, the notification’s ID is 001//
+
+                mNotificationManager.notify(001, mBuilder.build());
+
+            }
+        });
+
+
 
     }
 }
