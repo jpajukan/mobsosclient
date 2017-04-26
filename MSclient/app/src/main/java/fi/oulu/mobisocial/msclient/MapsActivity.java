@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
@@ -25,6 +26,13 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -141,25 +149,68 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Button button3 = (Button) findViewById(R.id.testButton2);
         button3.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                // Perform action on click
-                NotificationCompat.Builder mBuilder =
-                        new NotificationCompat.Builder(getApplicationContext())
-                                .setSmallIcon(R.drawable.common_full_open_on_phone)
-                                .setContentTitle("My notification")
-                                .setContentText("Hello World!");
-
-                // Gets an instance of the NotificationManager service//
-
-                NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-//When you issue multiple notifications about the same type of event, it’s best practice for your app to try to update an existing notification with this new information, rather than immediately creating a new notification. If you want to update this notification at a later date, you need to assign it an ID. You can then use this ID whenever you issue a subsequent notification. If the previous notification is still visible, the system will update this existing notification, rather than create a new one. In this example, the notification’s ID is 001//
-
-                mNotificationManager.notify(001, mBuilder.build());
+                new HttpRequestGetMessages().execute();
 
             }
         });
+    }
 
 
 
+    private class HttpRequestGetMessages extends AsyncTask<Void,Void,String> {
+        protected void onPreExecute() {
+            //display progress dialog.
+
+        }
+        protected String doInBackground(Void... params) {
+            try {
+                URL url = new URL("http://10.0.2.2:5000/");
+                try {
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                    try {
+                        InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                        String s = convertStreamToString(in);
+
+                        return s;
+
+                    } finally {
+                        urlConnection.disconnect();
+                    }
+
+                }catch(IOException e){
+                    //dostuff
+                }
+            }catch(MalformedURLException ex){
+                //do exception handling here
+            }
+
+            return "connection failed";
+        }
+
+
+
+        protected void onPostExecute(String result) {
+            // dismiss progress dialog and update ui
+
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(getApplicationContext())
+                            .setSmallIcon(R.drawable.common_full_open_on_phone)
+                            .setContentTitle("My notification")
+                            .setContentText(result);
+
+            // Gets an instance of the NotificationManager service//
+
+            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+//When you issue multiple notifications about the same type of event, it’s best practice for your app to try to update an existing notification with this new information, rather than immediately creating a new notification. If you want to update this notification at a later date, you need to assign it an ID. You can then use this ID whenever you issue a subsequent notification. If the previous notification is still visible, the system will update this existing notification, rather than create a new one. In this example, the notification’s ID is 001//
+
+            mNotificationManager.notify(001, mBuilder.build());
+        }
+
+        //from stackoverflow http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
+        private String convertStreamToString(java.io.InputStream is) {
+            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+            return s.hasNext() ? s.next() : "";
+        }
     }
 }
