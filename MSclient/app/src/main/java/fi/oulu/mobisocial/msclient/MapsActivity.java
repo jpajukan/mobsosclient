@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -27,9 +28,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedInputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -153,6 +160,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
+
+        Button button4 = (Button) findViewById(R.id.testButton3);
+        button4.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                new HttpRequestPostLogin().execute();
+
+            }
+        });
     }
 
 
@@ -179,6 +194,77 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 }catch(IOException e){
                     //dostuff
+                }
+            }catch(MalformedURLException ex){
+                //do exception handling here
+            }
+
+            return "connection failed";
+        }
+
+
+
+        protected void onPostExecute(String result) {
+            // dismiss progress dialog and update ui
+
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(getApplicationContext())
+                            .setSmallIcon(R.drawable.common_full_open_on_phone)
+                            .setContentTitle("My notification")
+                            .setContentText(result);
+
+            // Gets an instance of the NotificationManager service//
+
+            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+//When you issue multiple notifications about the same type of event, it’s best practice for your app to try to update an existing notification with this new information, rather than immediately creating a new notification. If you want to update this notification at a later date, you need to assign it an ID. You can then use this ID whenever you issue a subsequent notification. If the previous notification is still visible, the system will update this existing notification, rather than create a new one. In this example, the notification’s ID is 001//
+
+            mNotificationManager.notify(001, mBuilder.build());
+        }
+
+        //from stackoverflow http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
+        private String convertStreamToString(java.io.InputStream is) {
+            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+            return s.hasNext() ? s.next() : "";
+        }
+    }
+
+
+    private class HttpRequestPostLogin extends AsyncTask<Void,Void,String> {
+        protected void onPreExecute() {
+            //display progress dialog.
+
+        }
+        protected String doInBackground(Void... params) {
+            //from http://stackoverflow.com/questions/9767952/how-to-add-parameters-to-httpurlconnection-using-post
+            try {
+                URL url = new URL("http://10.0.2.2:5000/login");
+                try {
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+                    urlConnection.setReadTimeout(10000);
+                    urlConnection.setConnectTimeout(15000);
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setRequestProperty("Content-Type", "application/json");
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+
+                    JSONObject cred = new JSONObject();
+                    cred.put("username","example1");
+                    cred.put("password", "example1p");
+
+                    OutputStreamWriter writer= new OutputStreamWriter(urlConnection.getOutputStream());
+                    writer.write(cred.toString());
+
+                    writer.flush();
+                    writer.close();
+
+                    return urlConnection.getResponseMessage();
+
+                }catch(IOException e){
+                    //dostuff
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
             }catch(MalformedURLException ex){
                 //do exception handling here
