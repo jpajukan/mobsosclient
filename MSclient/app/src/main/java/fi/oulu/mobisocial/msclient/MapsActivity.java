@@ -179,7 +179,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         protected String doInBackground(Void... params) {
             try {
-                URL url = new URL("http://10.0.2.2:5000/");
+                URL url = new URL("http://10.0.2.2:5000/api/messages/1");
                 try {
                     HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                     try {
