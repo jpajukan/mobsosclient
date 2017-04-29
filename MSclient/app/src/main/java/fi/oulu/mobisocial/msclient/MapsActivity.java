@@ -13,6 +13,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NotificationCompat;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -65,6 +66,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 
         mDrawerList = (ListView)findViewById(R.id.navList);
+
+        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+
 
         addDrawerItems();
 
@@ -297,6 +301,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private String convertStreamToString(java.io.InputStream is) {
             java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
             return s.hasNext() ? s.next() : "";
+        }
+    }
+
+    // https://developer.android.com/training/implementing-navigation/nav-drawer.html
+    private class DrawerItemClickListener implements ListView.OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            selectItem(position);
+        }
+    }
+    /** Swaps fragments in the main content view */
+    private void selectItem(int position){
+        //mDrawerLayout.closeDrawer(mDrawerList);
+
+        Intent intent;
+
+        switch (position) {
+            case 1:
+                intent = new Intent(getApplicationContext(),ArchiveActivity.class);
+                startActivity(intent);
+                break;
+            case 2:
+                intent= new Intent(getApplicationContext(),HelpActivity.class);
+                startActivity(intent);
+            default:
+                break;
         }
     }
 }
