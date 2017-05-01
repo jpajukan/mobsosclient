@@ -11,6 +11,7 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
@@ -29,18 +30,22 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Iterator;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -144,6 +149,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // Perform action on click
                 PostMessageDialogFragment pmDialog = new PostMessageDialogFragment();
                 pmDialog.show(fManager, "whaat");
+
+                LatLng test = new LatLng(65, 25);
+                new HttpRequestGetMessagesNearby().execute(test);
+
             }
         });
 
@@ -174,7 +183,112 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
+    private void putMessageOnMap(double lat, double lon, String title, String message){
+        LatLng gps = new LatLng(lat, lon);
 
+        mMap.addMarker(new MarkerOptions().position(gps).title(title).snippet(message));
+
+    }
+
+    private void removeAllMessagesOnMap(){
+        mMap.clear();
+
+    }
+
+    private void getMessagesNearbyAndPutOnMap(){
+
+
+    }
+
+
+    private class HttpRequestGetMessagesNearby extends AsyncTask<LatLng,Void,String> {
+        protected void onPreExecute() {
+            //display progress dialog.
+
+        }
+        protected String doInBackground(LatLng... params) {
+            String querystring = String.format("q={\"lat\":%f, \"long\":%f}", params[0].latitude, params[0].longitude);
+
+            URL url = null;
+            StringBuilder result = new StringBuilder();
+
+
+            try {
+                url = new URL("http://10.0.2.2:5000/api/messages?" + querystring);
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            HttpURLConnection urlConnection = null;
+            try {
+                urlConnection = (HttpURLConnection) url.openConnection();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            InputStream in = null;
+            try {
+                in = new BufferedInputStream(urlConnection.getInputStream());
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    result.append(line);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            urlConnection.disconnect();
+
+            return result.toString();
+
+        }
+
+
+
+        protected void onPostExecute(String result) {
+            // http://www.androidhive.info/2012/01/android-json-parsing-tutorial/
+            Log.v("testikoko", result);
+            JSONObject myJson = null;
+            try {
+                myJson = new JSONObject(result);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+// use myJson as needed, for example
+            String name = myJson.optString("objects");
+            int profileIconId = myJson.optInt("profileIconId");
+
+            try {
+                JSONArray messages = myJson.getJSONArray("objects");
+                for (int i = 0; i < messages.length(); i++) {
+                    JSONObject msg = messages.getJSONObject(i);
+                    Log.v("testi", msg.toString());
+
+                    String sender = msg.getString("sender");
+                    String timestamp = msg.getString("timestamp");
+                    String text = msg.getString("message");
+
+                    double lon = msg.getDouble("longitude");
+                    double lat = msg.getDouble("latitude");
+
+                    putMessageOnMap(lat, lon, timestamp + sender, text);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        //from stackoverflow http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
+        private String convertStreamToString(java.io.InputStream is) {
+            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+            return s.hasNext() ? s.next() : "";
+        }
+    }
 
     private class HttpRequestGetMessages extends AsyncTask<Void,Void,String> {
         protected void onPreExecute() {
