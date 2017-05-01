@@ -44,6 +44,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.util.Iterator;
 
@@ -143,15 +144,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
 
+        //buttonit muualle?
+
         Button button = (Button) findViewById(R.id.postMessageDialogButton);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 // Perform action on click
                 PostMessageDialogFragment pmDialog = new PostMessageDialogFragment();
-                pmDialog.show(fManager, "whaat");
+                //pmDialog.show(fManager, "whaat");
 
                 LatLng test = new LatLng(65, 25);
-                new HttpRequestGetMessagesNearby().execute(test);
+
+                PostMessageParams p = new PostMessageParams(test, "heiolenuusiviesti", 1);
+
+                new HttpRequestPostMessage().execute(p);
+
+
 
             }
         });
@@ -184,6 +192,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void putMessageOnMap(double lat, double lon, String title, String message){
+        //
+
+
         LatLng gps = new LatLng(lat, lon);
 
         mMap.addMarker(new MarkerOptions().position(gps).title(title).snippet(message));
@@ -196,7 +207,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void getMessagesNearbyAndPutOnMap(){
+        removeAllMessagesOnMap();
 
+        LatLng test = new LatLng(65, 25);
+        new HttpRequestGetMessagesNearby().execute(test);
 
     }
 
@@ -251,16 +265,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         protected void onPostExecute(String result) {
             // http://www.androidhive.info/2012/01/android-json-parsing-tutorial/
-            Log.v("testikoko", result);
             JSONObject myJson = null;
             try {
                 myJson = new JSONObject(result);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-// use myJson as needed, for example
-            String name = myJson.optString("objects");
-            int profileIconId = myJson.optInt("profileIconId");
+
 
             try {
                 JSONArray messages = myJson.getJSONArray("objects");
@@ -281,12 +292,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 e.printStackTrace();
             }
 
-        }
-
-        //from stackoverflow http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
-        private String convertStreamToString(java.io.InputStream is) {
-            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-            return s.hasNext() ? s.next() : "";
         }
     }
 
@@ -353,6 +358,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //display progress dialog.
 
         }
+
         protected String doInBackground(Void... params) {
             //from http://stackoverflow.com/questions/9767952/how-to-add-parameters-to-httpurlconnection-using-post
             try {
@@ -368,10 +374,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     urlConnection.setDoOutput(true);
 
                     JSONObject cred = new JSONObject();
-                    cred.put("username","example1");
+                    cred.put("username", "example1");
                     cred.put("password", "example1p");
 
-                    OutputStreamWriter writer= new OutputStreamWriter(urlConnection.getOutputStream());
+                    OutputStreamWriter writer = new OutputStreamWriter(urlConnection.getOutputStream());
                     writer.write(cred.toString());
 
                     writer.flush();
@@ -379,12 +385,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     return urlConnection.getResponseMessage();
 
-                }catch(IOException e){
+                } catch (IOException e) {
                     //dostuff
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-            }catch(MalformedURLException ex){
+            } catch (MalformedURLException ex) {
                 //do exception handling here
             }
 
@@ -392,24 +398,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
+    }
 
-        protected void onPostExecute(String result) {
-            // dismiss progress dialog and update ui
+        //http://stackoverflow.com/questions/12069669/how-can-you-pass-multiple-primitive-parameters-to-asynctask
+        private class PostMessageParams {
+            LatLng gps;
+            String message;
+            int senderid;
 
-            NotificationCompat.Builder mBuilder =
-                    new NotificationCompat.Builder(getApplicationContext())
-                            .setSmallIcon(R.drawable.common_full_open_on_phone)
-                            .setContentTitle("My notification")
-                            .setContentText(result);
-
-            // Gets an instance of the NotificationManager service//
-
-            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-//When you issue multiple notifications about the same type of event, it’s best practice for your app to try to update an existing notification with this new information, rather than immediately creating a new notification. If you want to update this notification at a later date, you need to assign it an ID. You can then use this ID whenever you issue a subsequent notification. If the previous notification is still visible, the system will update this existing notification, rather than create a new one. In this example, the notification’s ID is 001//
-
-            mNotificationManager.notify(001, mBuilder.build());
+            PostMessageParams(LatLng location, String msg, int sender) {
+                this.gps = location;
+                this.message = msg;
+                this.senderid = sender;
+            }
         }
+
+        private class HttpRequestPostMessage extends AsyncTask<PostMessageParams,Void,String> {
+            protected String doInBackground(PostMessageParams... params) {
+                URL url = null;
+                try {
+                    url = new URL("http://10.0.2.2:5000/api/messages");
+
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+                    urlConnection.setReadTimeout(10000);
+                    urlConnection.setConnectTimeout(15000);
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setRequestProperty("Content-Type", "application/json");
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+
+                    JSONObject payload = new JSONObject();
+                    payload.put("sender", params[0].senderid);
+                    payload.put("message", params[0].message);
+                    payload.put("latitude", params[0].gps.latitude);
+                    payload.put("longitude", params[0].gps.longitude);
+
+                    OutputStreamWriter writer= new OutputStreamWriter(urlConnection.getOutputStream());
+                    writer.write(payload.toString());
+                    writer.flush();
+                    writer.close();
+
+                    return urlConnection.getResponseMessage();
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (ProtocolException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+
+                return "failed";
+            }
+
+
+
+        protected void onPostExecute(String s) {
+            // update messages on map
+            Log.v("testi", s);
+            getMessagesNearbyAndPutOnMap();
+        }
+
+
 
         //from stackoverflow http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
         private String convertStreamToString(java.io.InputStream is) {
