@@ -83,7 +83,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     private void addDrawerItems() {
-        String[] osArray = { "shit", "anothershit", "asdfasdf", "nooooo!", "qwerty" };
+        String[] osArray = { "Archive", "Help"};
         mAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, osArray);
         mDrawerList.setAdapter(mAdapter);
     }
@@ -486,11 +486,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Intent intent;
 
         switch (position) {
-            case 1:
+            case 0:
                 intent = new Intent(getApplicationContext(),ArchiveActivity.class);
                 startActivity(intent);
                 break;
-            case 2:
+            case 1:
                 intent= new Intent(getApplicationContext(),HelpActivity.class);
                 startActivity(intent);
             default:

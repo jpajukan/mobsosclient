@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">MSclient</string>
     <string name="title_activity_maps">Map</string>
+    <string name="helptext">LocMe is a simple easy to use location based managing app.\r\n\r\n
+
+        1. Login with your username and password.\r\n
+        2. Find messages on map.\r\n
+        3. Read messages.\r\n
+        4. Easily post your message on your location.\r\n\r\n
+
+        It is that simple.</string>
 </resources>
