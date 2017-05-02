@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MSclient</string>
+    <string name="app_name">LocMe</string>
     <string name="title_activity_maps">Map</string>
     <string name="helptext">LocMe is a simple easy to use location based managing app.\r\n\r\n
 

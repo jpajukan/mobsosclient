@@ -21,39 +21,10 @@
         android:layout_gravity="right|top"
         android:text="Post message"
         android:padding="10dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="450dp"
         android:paddingRight="10dp"
         android:id="@+id/postMessageDialogButton" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right|top"
-        android:text="Archivetest"
-        android:padding="10dp"
-        android:layout_marginTop="50dp"
-        android:paddingRight="10dp"
-        android:id="@+id/testButton" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right|top"
-        android:text="Set notificationtest"
-        android:padding="10dp"
-        android:layout_marginTop="80dp"
-        android:paddingRight="10dp"
-        android:id="@+id/testButton2" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right|top"
-        android:text="Post login"
-        android:padding="10dp"
-        android:layout_marginTop="110dp"
-        android:paddingRight="10dp"
-        android:id="@+id/testButton3" />
 </fragment>
 
 

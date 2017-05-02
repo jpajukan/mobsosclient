@@ -116,9 +116,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
 
-
-
-
     }
 
     protected void onStart() {
@@ -154,7 +151,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in Oulu and move the camera
         LatLng start = new LatLng(65, 25);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(start , 7.0f));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(start, 7.0f));
 
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
 
@@ -186,9 +183,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+
+        //Keeping the map always center of your location
+        //http://stackoverflow.com/questions/18588059/detect-if-user-deselects-marker-on-google-map
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng)
+            {
+                mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener()
+                {
+                    @Override
+                    public boolean onMarkerClick(Marker marker)
+                    {
+                        //Code for on marker click goes here
+                        return false;
+                    }
+                });
+                //Code for marker deselect goes here
+                Location curLoc = getLoc();
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()), 7.0f));
+            }
+        });
+
     }
 
-    private void showMessagePostDialog(){
+    private void showMessagePostDialog() {
         PostMessageDialogFragment pmDialog = new PostMessageDialogFragment();
         pmDialog.show(fManager, "postMessageDialog");
     }
@@ -210,15 +229,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void updateMap(){
+    private void updateMap() {
 
         Location lastLoc = getLoc();
 
-        if(lastLoc != null) {
+        if (lastLoc != null) {
             getMessagesNearbyAndPutOnMap(lastLoc);
 
             LatLng newloc = new LatLng(lastLoc.getLatitude(), lastLoc.getLongitude());
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newloc , 7.0f));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newloc, 7.0f));
 
         }
 
@@ -351,7 +370,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 e.printStackTrace();
             }
 
-
             try {
                 JSONArray messages = myJson.getJSONArray("objects");
                 for (int i = 0; i < messages.length(); i++) {
@@ -368,68 +386,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     String formattedTimestamp = timestampConverter(timestamp);
 
                     putMessageOnMap(lat, lon, formattedTimestamp + " by " + sendername, text);
+
                 }
+
             } catch (JSONException e) {
                 e.printStackTrace();
             }
 
-        }
-    }
-
-    private class HttpRequestGetMessages extends AsyncTask<Void,Void,String> {
-        protected void onPreExecute() {
-            //display progress dialog.
-
-        }
-        protected String doInBackground(Void... params) {
-            try {
-                URL url = new URL("http://10.0.2.2:5000/api/messages/1");
-                try {
-                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                    try {
-                        InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                        String s = convertStreamToString(in);
-
-                        return s;
-
-                    } finally {
-                        urlConnection.disconnect();
-                    }
-
-                }catch(IOException e){
-                    //dostuff
-                }
-            }catch(MalformedURLException ex){
-                //do exception handling here
-            }
-
-            return "connection failed";
-        }
-
-
-
-        protected void onPostExecute(String result) {
-            // dismiss progress dialog and update ui
-
-            NotificationCompat.Builder mBuilder =
-                    new NotificationCompat.Builder(getApplicationContext())
-                            .setSmallIcon(R.drawable.common_full_open_on_phone)
-                            .setContentTitle("My notification")
-                            .setContentText(result);
-
-            // Gets an instance of the NotificationManager service//
-
-            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-//When you issue multiple notifications about the same type of event, it’s best practice for your app to try to update an existing notification with this new information, rather than immediately creating a new notification. If you want to update this notification at a later date, you need to assign it an ID. You can then use this ID whenever you issue a subsequent notification. If the previous notification is still visible, the system will update this existing notification, rather than create a new one. In this example, the notification’s ID is 001//
-
-            mNotificationManager.notify(001, mBuilder.build());
-        }
-
-        //from stackoverflow http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
-        private String convertStreamToString(java.io.InputStream is) {
-            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-            return s.hasNext() ? s.next() : "";
         }
     }
 
@@ -468,6 +431,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     payload.put("latitude", params[0].gps.latitude);
                     payload.put("longitude", params[0].gps.longitude);
 
+
+                    //Ugly hard code for making video
+                    payload.put("timestamp", "2017-05-02 18:55");
+                    payload.put("sendername", "example0");
+
+
                     OutputStreamWriter writer= new OutputStreamWriter(urlConnection.getOutputStream());
                     writer.write(payload.toString());
                     writer.flush();
@@ -495,7 +464,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // update messages on map
             updateMap();
         }
-
 
 
         //from stackoverflow http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string
