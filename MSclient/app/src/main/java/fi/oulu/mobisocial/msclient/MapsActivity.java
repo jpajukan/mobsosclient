@@ -3,10 +3,15 @@ package fi.oulu.mobisocial.msclient;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
@@ -22,6 +27,11 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -46,16 +56,23 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener , LocationListener{
 
     private GoogleMap mMap;
 
     private ListView mDrawerList;
     private ArrayAdapter<String> mAdapter;
 
+    private GoogleApiClient mGoogleApiClient;
+
     private FragmentManager fManager = getSupportFragmentManager();
+    private Location mLastLocation;
+    private LocationRequest mLocationRequest;
 
     @Override
     public FragmentManager getSupportFragmentManager() {
@@ -71,19 +88,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        mDrawerList = (ListView)findViewById(R.id.navList);
+        mDrawerList = (ListView) findViewById(R.id.navList);
 
         mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
 
 
         addDrawerItems();
 
+        // https://developer.android.com/training/location/retrieve-current.html#play-services
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
 
+
+    }
+
+    protected void onStart() {
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+
+    protected void onStop() {
+        mGoogleApiClient.disconnect();
+        super.onStop();
     }
 
 
     private void addDrawerItems() {
-        String[] osArray = { "Archive", "Help"};
+        String[] osArray = {"Archive", "Help"};
         mAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, osArray);
         mDrawerList.setAdapter(mAdapter);
     }
@@ -160,7 +196,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 new HttpRequestPostMessage().execute(p);
 
 
-
             }
         });
 
@@ -168,8 +203,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         button2.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 // Perform action on click
-                Intent intent = new Intent(getApplicationContext(), ArchiveActivity.class);
-                startActivity(intent);
+               // Intent intent = new Intent(getApplicationContext(), ArchiveActivity.class);
+                //startActivity(intent);
+                getLoc();
             }
         });
 
@@ -191,7 +227,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private void putMessageOnMap(double lat, double lon, String title, String message){
+    private void putMessageOnMap(double lat, double lon, String title, String message) {
         //
 
 
@@ -201,17 +237,98 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void removeAllMessagesOnMap(){
+    private void removeAllMessagesOnMap() {
         mMap.clear();
 
     }
 
-    private void getMessagesNearbyAndPutOnMap(){
+    private void getMessagesNearbyAndPutOnMap() {
         removeAllMessagesOnMap();
 
         LatLng test = new LatLng(65, 25);
         new HttpRequestGetMessagesNearby().execute(test);
 
+    }
+
+    private void getLoc(){
+        Log.v("gpstestilat","alku");
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        Log.v("gpstestilat","alku2");
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        if (mLastLocation != null) {
+
+            Log.v("gpstestilat", String.valueOf(mLastLocation.getLatitude()));
+            Log.v("gpstestilong", String.valueOf(mLastLocation.getLongitude()));
+            //mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
+            //mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
+        }
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        //http://stackoverflow.com/questions/43503157/google-api-client-location-updates-not-working-and-lastknownlocation-is-null-aft
+        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        //if (location == null) {
+            // Create the LocationRequest object
+            mLocationRequest = LocationRequest.create()
+                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                    .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+                    .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+        //}
+        //else {
+            // Location is already available
+        //}
+
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        if (mLastLocation != null) {
+
+            Log.v("gpstestilat", String.valueOf(mLastLocation.getLatitude()));
+            Log.v("gpstestilong", String.valueOf(mLastLocation.getLongitude()));
+            //mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
+            //mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
+        }
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        LatLng newloc = new LatLng(location.getLatitude(), location.getLongitude());
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(newloc));
+
+        getMessagesNearbyAndPutOnMap();
     }
 
 
@@ -279,14 +396,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     JSONObject msg = messages.getJSONObject(i);
                     Log.v("testi", msg.toString());
 
-                    String sender = msg.getString("sender");
+                    String sendername = msg.getString("sendername");
                     String timestamp = msg.getString("timestamp");
                     String text = msg.getString("message");
 
                     double lon = msg.getDouble("longitude");
                     double lat = msg.getDouble("latitude");
 
-                    putMessageOnMap(lat, lon, timestamp + sender, text);
+                    String formattedTimestamp = timestampConverter(timestamp);
+
+                    putMessageOnMap(lat, lon, formattedTimestamp + " by " + sendername, text);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -496,5 +615,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             default:
                 break;
         }
+    }
+
+    private String timestampConverter(String time){
+        //http://stackoverflow.com/questions/15730298/java-format-yyyy-mm-ddthhmmss-sssz-to-yyyy-mm-dd-hhmmss
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        SimpleDateFormat output = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date d = null;
+        try {
+            d = sdf.parse(time);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        String formattedTime = output.format(d);
+
+        return formattedTime;
     }
 }
