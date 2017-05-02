@@ -21,7 +21,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,9 +95,8 @@ public class ArchiveActivity extends AppCompatActivity {
                     String time = message.getString("timestamp");
                     String sendername = message.getString("sendername");
                     String text = message.getString("message");
-                    messageList.add(createMessage(sendername, time, text));
+                    messageList.add(createMessage(sendername, timestampConverter(time), text));
 
-                    Log.v("sdf", text);
                 }
             }
             catch(JSONException e){
@@ -115,5 +117,20 @@ public class ArchiveActivity extends AppCompatActivity {
         HashMap<String, String> message = new HashMap<String, String>();
         message.put("item", user + "\n" + time + "\n" + text);
         return message;
+    }
+
+    private String timestampConverter(String time){
+        //http://stackoverflow.com/questions/15730298/java-format-yyyy-mm-ddthhmmss-sssz-to-yyyy-mm-dd-hhmmss
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        SimpleDateFormat output = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date d = null;
+        try {
+            d = sdf.parse(time);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        String formattedTime = output.format(d);
+
+        return formattedTime;
     }
 }

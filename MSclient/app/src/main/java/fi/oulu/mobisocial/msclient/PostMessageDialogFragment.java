@@ -13,9 +13,21 @@ import android.widget.EditText;
  */
 
 public class PostMessageDialogFragment extends DialogFragment {
+    private OnPostMessageListener callback;
+
+    public interface OnPostMessageListener {
+        public void OnPostMessageSubmit(String msg);
+    }
+
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        callback = (OnPostMessageListener) getActivity();
+    }
+
+
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        EditText input = new EditText(getActivity());
+        final EditText input = new EditText(getActivity());
 // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 
@@ -25,14 +37,15 @@ public class PostMessageDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 
         builder.setView(input);
-        builder.setMessage("send msg pls")
-                .setPositiveButton("yodawg", new DialogInterface.OnClickListener() {
+        builder.setMessage("Send message to current location")
+                .setPositiveButton("Send", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        // FIRE ZE MISSILES!
+                        final String msg = input.getText().toString();
+                        callback.OnPostMessageSubmit(msg);
 
                     }
                 })
-                .setNegativeButton("nope", new DialogInterface.OnClickListener() {
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User cancelled the dialog
                     }

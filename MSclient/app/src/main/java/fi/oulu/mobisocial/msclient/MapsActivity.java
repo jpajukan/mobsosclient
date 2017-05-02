@@ -12,6 +12,7 @@ import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
@@ -61,7 +62,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener , LocationListener{
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, PostMessageDialogFragment.OnPostMessageListener {
 
     private GoogleMap mMap;
 
@@ -73,6 +74,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private FragmentManager fManager = getSupportFragmentManager();
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
+
+    // Set user to be always first user
+    private int userId = 1;
 
     @Override
     public FragmentManager getSupportFragmentManager() {
@@ -103,6 +107,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .addApi(LocationServices.API)
                     .build();
         }
+
+        Button button = (Button) findViewById(R.id.postMessageDialogButton);
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                showMessagePostDialog();
+            }
+        });
+
+
+
 
 
     }
@@ -138,17 +152,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        // Add a marker in Oulu and move the camera
+        LatLng start = new LatLng(65, 25);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(start , 7.0f));
 
-        LatLng sydney2 = new LatLng(-33, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney2).title("second in sydney klasjdflk aslkfdj sljafsöljsaö fjasdölkf l aklsdj flkasj dflsaj dflkj asdölkf jsalödfj salködfj lköasjf dlksaj flkjs fdlkj ").snippet("ksadflkasjdlkf sakldjf lk" + "\n" + "asj fdlkj aslkdfj alskjdflkasj dflkj salkjflkas fdlk aslkfj lkas" + "\n" + "fdj lksfdj lk"));
-
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-
-
-        //got from stackoveflow
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
 
             @Override
@@ -179,79 +186,46 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+    }
 
-        //buttonit muualle?
-
-        Button button = (Button) findViewById(R.id.postMessageDialogButton);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                // Perform action on click
-                PostMessageDialogFragment pmDialog = new PostMessageDialogFragment();
-                //pmDialog.show(fManager, "whaat");
-
-                LatLng test = new LatLng(65, 25);
-
-                PostMessageParams p = new PostMessageParams(test, "heiolenuusiviesti", 1);
-
-                new HttpRequestPostMessage().execute(p);
-
-
-            }
-        });
-
-        Button button2 = (Button) findViewById(R.id.testButton);
-        button2.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                // Perform action on click
-               // Intent intent = new Intent(getApplicationContext(), ArchiveActivity.class);
-                //startActivity(intent);
-                getLoc();
-            }
-        });
-
-
-        Button button3 = (Button) findViewById(R.id.testButton2);
-        button3.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                new HttpRequestGetMessages().execute();
-
-            }
-        });
-
-        Button button4 = (Button) findViewById(R.id.testButton3);
-        button4.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                new HttpRequestPostLogin().execute();
-
-            }
-        });
+    private void showMessagePostDialog(){
+        PostMessageDialogFragment pmDialog = new PostMessageDialogFragment();
+        pmDialog.show(fManager, "postMessageDialog");
     }
 
     private void putMessageOnMap(double lat, double lon, String title, String message) {
-        //
-
-
         LatLng gps = new LatLng(lat, lon);
-
         mMap.addMarker(new MarkerOptions().position(gps).title(title).snippet(message));
-
     }
 
     private void removeAllMessagesOnMap() {
         mMap.clear();
-
     }
 
-    private void getMessagesNearbyAndPutOnMap() {
+    private void getMessagesNearbyAndPutOnMap(Location loc) {
         removeAllMessagesOnMap();
 
-        LatLng test = new LatLng(65, 25);
+        LatLng test = new LatLng(loc.getLatitude(), loc.getLongitude());
         new HttpRequestGetMessagesNearby().execute(test);
 
     }
 
-    private void getLoc(){
-        Log.v("gpstestilat","alku");
+    private void updateMap(){
+
+        Location lastLoc = getLoc();
+
+        if(lastLoc != null) {
+            getMessagesNearbyAndPutOnMap(lastLoc);
+
+            LatLng newloc = new LatLng(lastLoc.getLatitude(), lastLoc.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newloc , 7.0f));
+
+        }
+
+
+    }
+
+    private Location getLoc() {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -260,37 +234,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            return;
+            return null;
         }
-        Log.v("gpstestilat","alku2");
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
         if (mLastLocation != null) {
-
-            Log.v("gpstestilat", String.valueOf(mLastLocation.getLatitude()));
-            Log.v("gpstestilong", String.valueOf(mLastLocation.getLongitude()));
-            //mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
-            //mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
+            return mLastLocation;
         }
+
+        return null;
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         //http://stackoverflow.com/questions/43503157/google-api-client-location-updates-not-working-and-lastknownlocation-is-null-aft
-        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        //if (location == null) {
-            // Create the LocationRequest object
-            mLocationRequest = LocationRequest.create()
-                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                    .setInterval(10 * 1000)        // 10 seconds, in milliseconds
-                    .setFastestInterval(1 * 1000); // 1 second, in milliseconds
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-        //}
-        //else {
-            // Location is already available
-        //}
-
-
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -301,15 +258,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                mGoogleApiClient);
-        if (mLastLocation != null) {
 
-            Log.v("gpstestilat", String.valueOf(mLastLocation.getLatitude()));
-            Log.v("gpstestilong", String.valueOf(mLastLocation.getLongitude()));
-            //mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
-            //mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
-        }
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+
 
     }
 
@@ -325,16 +280,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
-        LatLng newloc = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(newloc));
+        updateMap();
+    }
 
-        getMessagesNearbyAndPutOnMap();
+    @Override
+    public void OnPostMessageSubmit(String msg) {
+        //post message
+        Location curLoc = getLoc();
+        LatLng curLatLong = new LatLng(curLoc.getLatitude(), curLoc.getLongitude());
+
+        PostMessageParams p = new PostMessageParams(curLatLong, msg, userId);
+
+        new HttpRequestPostMessage().execute(p);
     }
 
 
     private class HttpRequestGetMessagesNearby extends AsyncTask<LatLng,Void,String> {
         protected void onPreExecute() {
-            //display progress dialog.
 
         }
         protected String doInBackground(LatLng... params) {
@@ -472,53 +434,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    private class HttpRequestPostLogin extends AsyncTask<Void,Void,String> {
-        protected void onPreExecute() {
-            //display progress dialog.
-
-        }
-
-        protected String doInBackground(Void... params) {
-            //from http://stackoverflow.com/questions/9767952/how-to-add-parameters-to-httpurlconnection-using-post
-            try {
-                URL url = new URL("http://10.0.2.2:5000/login");
-                try {
-                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-
-                    urlConnection.setReadTimeout(10000);
-                    urlConnection.setConnectTimeout(15000);
-                    urlConnection.setRequestMethod("POST");
-                    urlConnection.setRequestProperty("Content-Type", "application/json");
-                    urlConnection.setDoInput(true);
-                    urlConnection.setDoOutput(true);
-
-                    JSONObject cred = new JSONObject();
-                    cred.put("username", "example1");
-                    cred.put("password", "example1p");
-
-                    OutputStreamWriter writer = new OutputStreamWriter(urlConnection.getOutputStream());
-                    writer.write(cred.toString());
-
-                    writer.flush();
-                    writer.close();
-
-                    return urlConnection.getResponseMessage();
-
-                } catch (IOException e) {
-                    //dostuff
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            } catch (MalformedURLException ex) {
-                //do exception handling here
-            }
-
-            return "connection failed";
-        }
-
-
-    }
-
         //http://stackoverflow.com/questions/12069669/how-can-you-pass-multiple-primitive-parameters-to-asynctask
         private class PostMessageParams {
             LatLng gps;
@@ -578,8 +493,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         protected void onPostExecute(String s) {
             // update messages on map
-            Log.v("testi", s);
-            getMessagesNearbyAndPutOnMap();
+            updateMap();
         }
 
 
