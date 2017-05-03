@@ -15,3 +15,4 @@ Features:
 Running:
 1. Start server (instructions in server program readme)
 2. Start this client app in emulator on same machine
+3. You must give location permissions to the app
